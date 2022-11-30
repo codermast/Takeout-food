@@ -80,4 +80,13 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> impl
 
         return true;
     }
+
+    @Override
+    public List<SetMeal> getListByCategoryIdWithSetMeal(String categoryId, Integer status) {
+        LambdaQueryWrapper<SetMeal> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SetMeal::getCategoryId,categoryId);
+        queryWrapper.eq(status != null,SetMeal::getStatus,status);
+        return this.list(queryWrapper);
+    }
+
 }

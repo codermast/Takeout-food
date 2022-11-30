@@ -142,4 +142,14 @@ public class SetmealController {
         }
         return R.success(status == 1? "启售成功" : "停售成功");
     }
+
+    /**
+     * @Description: 根据分类id查询其下的菜品
+     * @param categoryId 分类id
+     * @Author: <a href="https://www.codermast.com/">CoderMast</a>
+     */
+    @GetMapping("/list")
+    public R<List<SetMeal>> getListByCategoryIdWithDish(String categoryId,Integer status){
+        return R.success(setMealService.getListByCategoryIdWithSetMeal(categoryId,status));
+    }
 }

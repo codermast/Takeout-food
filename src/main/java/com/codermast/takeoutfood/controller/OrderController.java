@@ -4,13 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.codermast.takeoutfood.common.BaseContext;
 import com.codermast.takeoutfood.common.R;
 import com.codermast.takeoutfood.entity.Order;
 import com.codermast.takeoutfood.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
@@ -36,17 +35,37 @@ public class OrderController {
      * @Author: CoderMast <a href="https://www.codermast.com/">...</a>
      */
     @GetMapping("/page")
-    public R<Page<Order>> page(int page, int pageSize, String number, LocalDateTime beginTime,LocalDateTime endTime){
+    public R<Page<Order>> page(Integer page, Integer pageSize, String number, LocalDateTime beginTime, LocalDateTime endTime){
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
 
         Page<Order> pageInfo = new Page<>(page,pageSize);
 
-        queryWrapper.like(StringUtils.isNotEmpty(number),Order::getNumber,number);
-        queryWrapper.ge(ObjectUtils.isNotNull(beginTime),Order::getOrderTime,beginTime);
-        queryWrapper.le(ObjectUtils.isNotNull(endTime),Order::getOrderTime,endTime);
+        queryWrapper.like(StringUtils.isNotEmpty(number), Order::getNumber,number);
+        queryWrapper.ge(ObjectUtils.isNotNull(beginTime), Order::getOrderTime,beginTime);
+        queryWrapper.le(ObjectUtils.isNotNull(endTime), Order::getOrderTime,endTime);
 
         orderService.page(pageInfo,queryWrapper);
 
         return R.success(pageInfo);
+    }
+
+
+    @GetMapping("/userPage")
+    public R<Page<Order>> userPage(Integer page, Integer pageSize){
+        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+
+        Page<Order> pageInfo = new Page<>(page,pageSize);
+        Long userId = BaseContext.getCurrentId();
+        queryWrapper.eq(Order::getUserId,userId);
+
+        orderService.page(pageInfo,queryWrapper);
+
+        return R.success(pageInfo);
+    }
+
+    @PostMapping("/submit")
+    public R<String> submit(@RequestBody Order order){
+        orderService.submit(order);
+        return R.success("下单成功");
     }
 }

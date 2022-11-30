@@ -2,6 +2,7 @@ package com.codermast.takeoutfood.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.codermast.takeoutfood.common.BaseContext;
 import com.codermast.takeoutfood.common.R;
 import com.codermast.takeoutfood.common.ValidateCodeUtils;
 import com.codermast.takeoutfood.entity.User;
@@ -45,11 +46,11 @@ public class UserController {
             return R.error("手机号为空！");
         }
 
-        // 已经发送过验证码
-        String code = (String) session.getAttribute(phone);
-        if (StringUtils.isNotEmpty(code)){
-            return R.error("验证码已经发送，请稍后再试！");
-        }
+        //// 已经发送过验证码
+        //String code = (String) session.getAttribute(phone);
+        //if (StringUtils.isNotEmpty(code)){
+        //    return R.error("验证码已经发送，请稍后再试！");
+        //}
 
         // 生成验证码
         String strCode = ValidateCodeUtils.generateValidateCode4String(6);
@@ -57,8 +58,6 @@ public class UserController {
         log.info(strCode);
         // 将验证码放到Session中
         session.setAttribute(phone,strCode);
-        // 这里应当设置session的有效时间
-        session.setMaxInactiveInterval(60 * 5);
         return R.success("发送成功");
     }
 
@@ -89,9 +88,21 @@ public class UserController {
             }
             // 将用户id放在session中
             session.setAttribute("user", user.getId());
+            BaseContext.setCurrentId(user.getId());
             return R.success("登录成功");
         }else {
             return R.error("登录失败");
         }
+    }
+
+    /**
+     * @Description: 用户退出登录
+     * @param  session 当前用的session
+     * @Author: <a href="https://www.codermast.com/">CoderMast</a>
+     */
+    @PostMapping("/loginout")
+    public R<String> loginOut(HttpSession session){
+        session.removeAttribute("user");
+        return R.success("退出成功！");
     }
 }

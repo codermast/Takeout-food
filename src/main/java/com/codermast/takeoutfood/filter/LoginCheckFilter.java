@@ -1,6 +1,7 @@
 package com.codermast.takeoutfood.filter;
 
 import com.alibaba.fastjson.JSON;
+import com.codermast.takeoutfood.common.BaseContext;
 import com.codermast.takeoutfood.common.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.AntPathMatcher;
@@ -55,9 +56,13 @@ public class LoginCheckFilter implements Filter {
         }
 
         //2.1员工已登录
-        Object employee = request.getSession().getAttribute("employee");
-        if (employee != null) {
+        Object employeeId = request.getSession().getAttribute("employee");
+        if (employeeId != null) {
             log.info("员工已登录，已放行....");
+
+            // 将当前登录的员工id存入ThreadLocal
+            BaseContext.setCurrentId((Long) employeeId);
+
             filterChain.doFilter(request,response);
             return;
         }
@@ -66,6 +71,10 @@ public class LoginCheckFilter implements Filter {
         Object userId = request.getSession().getAttribute("user");
         if (userId != null) {
             log.info("用户已登录，已放行....");
+
+            // 将当前登录的用户id存入ThreadLocal
+            BaseContext.setCurrentId((Long) userId);
+
             filterChain.doFilter(request,response);
             return;
         }

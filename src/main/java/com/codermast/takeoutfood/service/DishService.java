@@ -10,5 +10,5 @@ public interface DishService extends IService<Dish> {
     DishDto getByIdWithFlavor(String id);
     void saveWithFlavor(DishDto dishDto);
 
-    List<Dish> getListByCategoryIdWithDish(String categoryId);
+    List<Dish> getListByCategoryIdWithDish(String categoryId,Integer status);
 }

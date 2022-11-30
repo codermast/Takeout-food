@@ -3,7 +3,6 @@ package com.codermast.takeoutfood.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.codermast.takeoutfood.common.BaseContext;
 import com.codermast.takeoutfood.common.R;
 import com.codermast.takeoutfood.dto.DishDto;
 import com.codermast.takeoutfood.entity.Category;
@@ -15,7 +14,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -123,10 +121,7 @@ public class DishController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PostMapping
-    public R<String> save(@RequestBody DishDto dishDto, HttpServletRequest request) {
-        // 获取当前登录的用户id，并且存入当前线程中
-        long id = (long) request.getSession().getAttribute("employee");
-        BaseContext.setCurrentId(id);
+    public R<String> save(@RequestBody DishDto dishDto) {
 
         dishService.saveWithFlavor(dishDto);
 
@@ -139,9 +134,7 @@ public class DishController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PutMapping
-    public R<String> update(@RequestBody DishDto dishDto,HttpServletRequest request){
-        long id = (long) request.getSession().getAttribute("employee");
-        BaseContext.setCurrentId(id);
+    public R<String> update(@RequestBody DishDto dishDto){
         boolean ret = dishService.updateById(dishDto);
         return ret? R.success("更新成功"):R.error("更新失败");
     }
@@ -153,9 +146,7 @@ public class DishController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PostMapping("/status/{status}")
-    public R<String> status(@PathVariable Integer status,@RequestParam List<Long> ids,HttpServletRequest request){
-        Long id = (Long) request.getSession().getAttribute("employee");
-        BaseContext.setCurrentId(id);
+    public R<String> status(@PathVariable Integer status,@RequestParam List<Long> ids){
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
 
         queryWrapper.in(ids != null,Dish::getId,ids);
@@ -177,7 +168,7 @@ public class DishController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @GetMapping("/list")
-    public R<List<Dish>> getListByCategoryIdWithDish(String categoryId){
-        return R.success(dishService.getListByCategoryIdWithDish(categoryId));
+    public R<List<Dish>> getListByCategoryIdWithDish(String categoryId,Integer status){
+        return R.success(dishService.getListByCategoryIdWithDish(categoryId,status));
     }
 }

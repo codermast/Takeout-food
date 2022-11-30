@@ -77,11 +77,10 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     }
 
     @Override
-    public List<Dish> getListByCategoryIdWithDish(String categoryId) {
+    public List<Dish> getListByCategoryIdWithDish(String categoryId,Integer status) {
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
-
         queryWrapper.eq(Dish::getCategoryId,categoryId);
-
+        queryWrapper.eq(status != null,Dish::getStatus,status);
         return this.list(queryWrapper);
     }
 }

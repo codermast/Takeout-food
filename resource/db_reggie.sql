@@ -237,10 +237,10 @@ CREATE TABLE `employee` (
 INSERT INTO `employee` VALUES ('1', '管理员', 'admin', 'e10adc3949ba59abbe56e057f20f883e', '13812312312', '1', '110101199001010047', '1', '2021-05-06 17:20:07', '2021-05-10 02:24:09', '1', '1');
 
 -- ----------------------------
--- Table structure for orders
+-- Table structure for order
 -- ----------------------------
-DROP TABLE IF EXISTS `orders`;
-CREATE TABLE `orders` (
+DROP TABLE IF EXISTS `order`;
+CREATE TABLE `order` (
   `id` bigint(20) NOT NULL COMMENT '主键',
   `number` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '订单号',
   `status` int(11) NOT NULL DEFAULT '1' COMMENT '订单状态 1待付款，2待派送，3已派送，4已完成，5已取消',
@@ -259,7 +259,7 @@ CREATE TABLE `orders` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='订单表';
 
 -- ----------------------------
--- Records of orders
+-- Records of order
 -- ----------------------------
 
 -- ----------------------------

@@ -3,6 +3,7 @@ package com.codermast.takeoutfood.controller;
 import com.codermast.takeoutfood.common.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,8 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 /**
@@ -77,21 +78,28 @@ public class CommonController {
     @GetMapping("/download")
     public void download(String name, HttpServletResponse response) {
         String imgUrl = imagesUrl + name;
-        File file = new File(imgUrl);
+
+        // 获取resources目录下的文件资源
+        ClassPathResource classPathResource = new ClassPathResource(imgUrl);
+
+        // 该文件的路径
+        // String path = classPathResource.getPath();
+        // log.info(path);
 
         try {
-            // 输入流，读取文件
-            FileInputStream fileInputStream = new FileInputStream(file);
+            // 获取文件的输入流
+            InputStream fileInputStream = classPathResource.getInputStream();
+
             // 输出流，将读取到的文件输出到浏览器页面上
             ServletOutputStream outputStream = response.getOutputStream();
-
             int len = 0;
+
             byte[] bytes = new byte[1024];
 
             while ((len = fileInputStream.read(bytes)) != -1){
-                outputStream.write(bytes);
-                outputStream.flush();
+                outputStream.write(bytes,0,len);
             }
+            outputStream.flush();
 
             // 关闭资源
             fileInputStream.close();

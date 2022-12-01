@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.codermast.takeoutfood.common.BaseContext;
 import com.codermast.takeoutfood.common.R;
-import com.codermast.takeoutfood.common.MailUtils;
 import com.codermast.takeoutfood.common.ValidateCodeUtils;
 import com.codermast.takeoutfood.entity.User;
 import com.codermast.takeoutfood.service.UserService;
@@ -31,9 +30,6 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    MailUtils mailUtils;
 
     /**
      * @Description: 发送短信

@@ -7,7 +7,9 @@ import com.codermast.takeoutfood.common.R;
 import com.codermast.takeoutfood.dto.DishDto;
 import com.codermast.takeoutfood.entity.Category;
 import com.codermast.takeoutfood.entity.Dish;
+import com.codermast.takeoutfood.entity.DishFlavor;
 import com.codermast.takeoutfood.service.CategoryService;
+import com.codermast.takeoutfood.service.DishFlavorService;
 import com.codermast.takeoutfood.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -32,6 +34,9 @@ public class DishController {
     // 注入dish业务实体
     @Autowired
     private DishService dishService;
+
+    @Autowired
+    private DishFlavorService dishFlavorService;
 
     // 注入category实体
     @Autowired
@@ -168,7 +173,42 @@ public class DishController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @GetMapping("/list")
-    public R<List<Dish>> getListByCategoryIdWithDish(String categoryId,Integer status){
-        return R.success(dishService.getListByCategoryIdWithDish(categoryId,status));
+    public R<List<DishDto>> list(Dish dish){
+//构造查询条件
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(dish.getCategoryId() != null ,Dish::getCategoryId,dish.getCategoryId());
+        //添加条件，查询状态为1（起售状态）的菜品
+        queryWrapper.eq(Dish::getStatus,1);
+
+        //添加排序条件
+        queryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
+
+        List<Dish> list = dishService.list(queryWrapper);
+
+        List<DishDto> dishDtoList = list.stream().map((item) -> {
+            DishDto dishDto = new DishDto();
+
+            BeanUtils.copyProperties(item,dishDto);
+
+            Long categoryId = item.getCategoryId();//分类id
+            //根据id查询分类对象
+            Category category = categoryService.getById(categoryId);
+
+            if(category != null){
+                String categoryName = category.getName();
+                dishDto.setCategoryName(categoryName);
+            }
+
+            //当前菜品的id
+            Long dishId = item.getId();
+            LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(DishFlavor::getDishId,dishId);
+            //SQL:select * from dish_flavor where dish_id = ?
+            List<DishFlavor> dishFlavorList = dishFlavorService.list(lambdaQueryWrapper);
+            dishDto.setFlavors(dishFlavorList);
+            return dishDto;
+        }).collect(Collectors.toList());
+
+        return R.success(dishDtoList);
     }
 }

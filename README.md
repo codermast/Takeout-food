@@ -6,8 +6,11 @@
 
 - 未学习Redis的读者，可以根据V1版本进行学习，后期适配Redis即可。
 - 了解过Redis的读者，直接建议上手V2版本，适配Redis，可以适当浏览V1的Session部分，进行对比，从而更好的体现出使用Redis的优点，加深印象。
-![](resource/截屏2022-12-01 19.32.09.png)
-![](resource/截屏2022-12-01 19.37.24.png)
+
+- 前台预览
+![前台](https://github.com/codermast/Takeout-food/blob/master/resource/%E6%88%AA%E5%B1%8F2022-12-01%2019.32.09.png?raw=true)
+- 后台预览
+![后台](https://github.com/codermast/Takeout-food/blob/master/resource/%E6%88%AA%E5%B1%8F2022-12-01%2019.37.24.png?raw=true)
 ## 🔷使用技术
 - SpringBoot
 - MySql

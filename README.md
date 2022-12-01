@@ -67,6 +67,10 @@
 - Mysql
 - Redis
 
+**缓存到Redis的内容：**
+- 缓存短信验证码
+- 缓存菜品数据
+
 ## 参考教程
 
 - 笔记整理：CSDN-[https://blog.csdn.net/qq_33685334](https://blog.csdn.net/qq_33685334)

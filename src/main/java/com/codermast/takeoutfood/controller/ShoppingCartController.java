@@ -46,7 +46,10 @@ public class ShoppingCartController {
         shoppingCart.setUserId(BaseContext.getCurrentId());
         LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ShoppingCart::getUserId,shoppingCart.getUserId());
-        queryWrapper.eq(ShoppingCart::getSetmealId,shoppingCart.getSetmealId());
+        queryWrapper.eq(shoppingCart.getSetmealId() != null,ShoppingCart::getSetmealId,shoppingCart.getSetmealId());
+        queryWrapper.eq(shoppingCart.getDishId() != null,ShoppingCart::getDishId,shoppingCart.getDishId());
+        queryWrapper.eq(shoppingCart.getDishFlavor() != null,ShoppingCart::getDishFlavor,shoppingCart.getDishFlavor());
+
         // 在购物车中查询是否存在该菜品
         ShoppingCart shoppingCartServiceOne = shoppingCartService.getOne(queryWrapper);
 
@@ -67,18 +70,38 @@ public class ShoppingCartController {
      */
     @PostMapping("/sub")
     public R<String> sub(@RequestBody Map<String,String> map){
-        LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ShoppingCart::getUserId,BaseContext.getCurrentId());
-        queryWrapper.eq(ShoppingCart::getSetmealId,map.get("setmealId"));
+        if (map.get("setmealId") != null){
+            LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ShoppingCart::getUserId,BaseContext.getCurrentId());
+            queryWrapper.eq(ShoppingCart::getSetmealId,map.get("setmealId"));
 
-        ShoppingCart one = shoppingCartService.getOne(queryWrapper);
+            ShoppingCart one = shoppingCartService.getOne(queryWrapper);
 
-        if (one.getNumber() > 1){
-            one.setNumber(one.getNumber() - 1);
-            shoppingCartService.updateById(one);
-        }else {
-            shoppingCartService.remove(queryWrapper);
+            if (one.getNumber() > 1){
+                one.setNumber(one.getNumber() - 1);
+                shoppingCartService.updateById(one);
+            }else {
+                shoppingCartService.remove(queryWrapper);
+            }
         }
+
+        if ((map.get("dishId") != null)){
+            LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ShoppingCart::getUserId,BaseContext.getCurrentId());
+            queryWrapper.eq(ShoppingCart::getDishId,map.get("dishId"));
+
+            ShoppingCart one = shoppingCartService.getOne(queryWrapper);
+            if (one != null) {
+                if (one.getNumber() > 1) {
+                    one.setNumber(one.getNumber() - 1);
+                    shoppingCartService.updateById(one);
+                } else {
+                    shoppingCartService.remove(queryWrapper);
+                }
+            }
+        }
+
+
         return R.success("删除成功");
     }
 

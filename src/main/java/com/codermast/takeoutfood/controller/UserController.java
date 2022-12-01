@@ -3,6 +3,7 @@ package com.codermast.takeoutfood.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.codermast.takeoutfood.common.BaseContext;
+import com.codermast.takeoutfood.common.MailUtils;
 import com.codermast.takeoutfood.common.R;
 import com.codermast.takeoutfood.common.ValidateCodeUtils;
 import com.codermast.takeoutfood.entity.User;
@@ -31,6 +32,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    MailUtils mailUtils;
+
     /**
      * @Description: 发送短信
      * @param user 手机号封装
@@ -38,7 +42,7 @@ public class UserController {
      */
     @PostMapping("/sendMsg")
     public R<String> sendMsg(@RequestBody User user, HttpSession session){
-        // 获取用户的手机号
+        // 获取用户的邮箱
         String phone = user.getPhone();
 
         // 手机号为空
@@ -46,16 +50,11 @@ public class UserController {
             return R.error("手机号为空！");
         }
 
-        //// 已经发送过验证码
-        //String code = (String) session.getAttribute(phone);
-        //if (StringUtils.isNotEmpty(code)){
-        //    return R.error("验证码已经发送，请稍后再试！");
-        //}
-
         // 生成验证码
-        String strCode = ValidateCodeUtils.generateValidateCode4String(6);
+        String strCode = String.valueOf(ValidateCodeUtils.generateValidateCode(4));
+        log.info("Code:" + strCode);
 
-        log.info(strCode);
+
         // 将验证码放到Session中
         session.setAttribute(phone,strCode);
         return R.success("发送成功");

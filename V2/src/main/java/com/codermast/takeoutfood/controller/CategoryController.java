@@ -2,16 +2,17 @@ package com.codermast.takeoutfood.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.codermast.takeoutfood.common.BaseContext;
 import com.codermast.takeoutfood.common.R;
 import com.codermast.takeoutfood.entity.Category;
 import com.codermast.takeoutfood.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Description: 分类管理
@@ -27,6 +28,9 @@ public class CategoryController {
     @Autowired
     CategoryService categoryService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     /**
      * @Description: 获取分类信息
      * @param page 页码
@@ -35,7 +39,18 @@ public class CategoryController {
      */
     @GetMapping("/page")
     public R<Page<Category>> page(int page, int pageSize){
-        Page<Category> pageInfo = new Page<>(page,pageSize);
+        String key = "category:page_" + page + ":pageSize_" + pageSize;
+        Page<Category> pageInfo = null;
+
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        pageInfo = (Page<Category>) opsForValue.get(key);
+
+        // 缓存命中
+        if (pageInfo != null){
+            return R.success(pageInfo);
+        }
+
+        pageInfo = new Page<>(page,pageSize);
 
         LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
         // 增加排序条件
@@ -43,6 +58,8 @@ public class CategoryController {
 
         categoryService.page(pageInfo,queryWrapper);
 
+        // 添加缓存
+        opsForValue.set(key,pageInfo,60, TimeUnit.MINUTES);
         log.info(pageInfo.toString());
         return R.success(pageInfo);
     }
@@ -56,16 +73,16 @@ public class CategoryController {
      * @Author: CoderMast <a href="https://www.codermast.com/">...</a>
      */
     @PostMapping
-    public R<String> save(HttpServletRequest request, @RequestBody Category category){
-        Long id = (Long) request.getSession().getAttribute("employee");
+    public R<String> save(@RequestBody Category category){
 
         if (category == null){
             return R.error("类型为空");
         }
 
-        BaseContext.setCurrentId(id);
-
         categoryService.save(category);
+
+        // 增加缓存
+        redisTemplate.opsForValue().set("category:" + category.getId(),category,60,TimeUnit.MINUTES);
         return R.success("创建成功");
     }
 
@@ -75,12 +92,18 @@ public class CategoryController {
      * @Author: CoderMast <a href="https://www.codermast.com/">...</a>
      */
     @DeleteMapping
-    public R<String> delete(Long ids){
+    public R<String> delete(@RequestParam List<Long> ids){
         // 直接通过id进行删除，未判断是否含有所关联的dish内容
         //categoryService.removeById(ids);
 
         // 对于上述的优化
-        categoryService.remove(ids);
+        categoryService.removeBatchByIds(ids);
+
+        // 删除缓存
+        for (Long id : ids) {
+            redisTemplate.delete("category:" + id);
+        }
+
         return R.success("删除成功");
     }
 
@@ -90,14 +113,16 @@ public class CategoryController {
      * @Author: CoderMast <a href="https://www.codermast.com/">...</a>
      */
     @PutMapping
-    public R<String> update(HttpServletRequest request,@RequestBody Category category){
+    public R<String> update(@RequestBody Category category){
         if (category == null){
             return R.error("类型为空");
         }
-        Long id = (Long) request.getSession().getAttribute("employee");
 
-        BaseContext.setCurrentId(id);
         categoryService.updateById(category);
+
+        // 更新缓存
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        opsForValue.set("category:" + category.getId(),category);
         return R.success("更新成功");
     }
 
@@ -108,11 +133,25 @@ public class CategoryController {
      */
     @GetMapping("/list")
     public R<List<Category>> list(Integer type){
+        List<Category> list = null;
+        String key = "category:dish:" + type;
+
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        list = (List<Category>) opsForValue.get(key);
+
+        // 缓存命中
+        if (list != null){
+            return R.success(list);
+        }
+
         LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-
         queryWrapper.eq(type != null,Category::getType,type);
+        queryWrapper.orderByDesc(Category::getSort);
 
-        List<Category> list = categoryService.list(queryWrapper);
+        list = categoryService.list(queryWrapper);
+
+        // 添加缓存
+        opsForValue.set(key,list,60,TimeUnit.MINUTES);
 
         return R.success(list);
     }

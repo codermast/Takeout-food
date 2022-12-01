@@ -14,11 +14,12 @@ import com.codermast.takeoutfood.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +43,9 @@ public class DishController {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     /**
      * @param page     页码
      * @param pageSize 页面大小
@@ -51,10 +55,21 @@ public class DishController {
      */
     @GetMapping("/page")
     public R<Page<DishDto>> page(int page, int pageSize, String name) {
+
+        Page<DishDto> dishDtoPage = null;
+        String key = "page_" + page + ":pageSize_" + pageSize + ":name_" + name;
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+
+        dishDtoPage = (Page<DishDto>) opsForValue.get(key);
+
+        // 缓存命中
+        if (dishDtoPage != null){
+            return R.success(dishDtoPage);
+        }
         // 菜品分页页面
         Page<Dish> dishPage = new Page<>(page,pageSize);
         // 菜品分页交互对象页面
-        Page<DishDto> dishDtoPage = new Page<>();
+        dishDtoPage = new Page<>();
 
         // 构造条件过滤器
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
@@ -86,7 +101,6 @@ public class DishController {
             // 设置分类名称到dishDto对象
             dishDto.setCategoryName(categoryServiceByIdName);
 
-
             // 返回该对象
             return dishDto;
         }).collect(Collectors.toList());
@@ -95,6 +109,9 @@ public class DishController {
         dishDtoPage.setRecords(recordsDishDto);
         // 将总条数赋值给dishDtoPage
         dishDtoPage.setTotal(dishPage.getTotal());
+
+        // 将数据缓存进redis
+        opsForValue.set(key,dishDtoPage,60,TimeUnit.MINUTES);
         return R.success(dishDtoPage);
     }
 
@@ -104,10 +121,15 @@ public class DishController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @DeleteMapping
-    public R<String> delete(String ids) {
-        String[] split = ids.split(",");
-        List<String> list = new ArrayList<>(Arrays.asList(split));
-        dishService.removeBatchByIds(list);
+    public R<String> delete(@RequestParam List<Long> ids) {
+        dishService.removeBatchByIds(ids);
+
+        // 删除redis缓存
+        for (Long id : ids) {
+            String key = "dish:" + id;
+            redisTemplate.delete(key);
+        }
+
         return R.success("批量删除成功！");
     }
 
@@ -118,7 +140,24 @@ public class DishController {
      */
     @GetMapping("/{id}")
     public R<DishDto> getOne(@PathVariable String id) {
-       return R.success(dishService.getByIdWithFlavor(id));
+        DishDto dishDto = null;
+        String key = "dish:" + id;
+
+        // 先查询Redis中是否有缓存
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        dishDto = (DishDto) opsForValue.get(key);
+        // Redis中存在则直接返回
+        if (dishDto != null){
+            return R.success(dishDto);
+        }
+
+        // Redis中不存在，先查数据库，然后添加缓存，再返回
+        dishDto = dishService.getByIdWithFlavor(id);
+
+        // 放入缓存，并设置60分钟后失效
+        opsForValue.set(key,dishDto,60, TimeUnit.MINUTES);
+
+        return R.success(dishDto);
     }
 
     /**
@@ -127,8 +166,13 @@ public class DishController {
      */
     @PostMapping
     public R<String> save(@RequestBody DishDto dishDto) {
-
         dishService.saveWithFlavor(dishDto);
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+
+        String key = "dish:" + dishDto.getId();
+
+        // 将数据缓存进Redis，设置60分过期
+        opsForValue.set(key,dishDto,60,TimeUnit.MINUTES);
 
         return R.success("菜品添加成功");
     }
@@ -141,6 +185,13 @@ public class DishController {
     @PutMapping
     public R<String> update(@RequestBody DishDto dishDto){
         boolean ret = dishService.updateById(dishDto);
+
+        String key = "dish:" + dishDto.getId();
+        // 更新Redis缓存
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        // 放入缓存，设置60分钟失效
+        opsForValue.set(key,dishDto,60,TimeUnit.MINUTES);
+
         return ret? R.success("更新成功"):R.error("更新失败");
     }
 
@@ -173,7 +224,21 @@ public class DishController {
      */
     @GetMapping("/list")
     public R<List<DishDto>> list(Dish dish){
-//构造查询条件
+        List<DishDto> dishDtoList = null;
+
+        // 先从redis中获取缓存数据
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+
+        String key = "dish:" + dish.getCategoryId();
+        // 这里缓存的key是dish的分类id，Value为其序列化的值
+        dishDtoList = (List<DishDto>) opsForValue.get(key);
+        // redis中存在数据，则直接返回，无需查询数据库
+        if (dishDtoList != null){
+            log.info("Redis中有缓存，获取的是缓存数据");
+            return R.success(dishDtoList);
+        }
+
+        //构造查询条件
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(dish.getCategoryId() != null ,Dish::getCategoryId,dish.getCategoryId());
         //添加条件，查询状态为1（起售状态）的菜品
@@ -184,7 +249,7 @@ public class DishController {
 
         List<Dish> list = dishService.list(queryWrapper);
 
-        List<DishDto> dishDtoList = list.stream().map((item) -> {
+        dishDtoList = list.stream().map((item) -> {
             DishDto dishDto = new DishDto();
 
             BeanUtils.copyProperties(item,dishDto);
@@ -208,6 +273,11 @@ public class DishController {
             return dishDto;
         }).collect(Collectors.toList());
 
+        //redis中不存在数据，则先查询数据库，然后将数据缓存进redis中，在返回数据
+
+        // 将数据存入缓存，设置60分钟失效
+        opsForValue.set(key,dishDtoList,60,TimeUnit.MINUTES);
+        log.info("Redis中没有缓存，查询了数据库");
         return R.success(dishDtoList);
     }
 }

@@ -82,10 +82,6 @@ public class CommonController {
         // 获取resources目录下的文件资源
         ClassPathResource classPathResource = new ClassPathResource(imgUrl);
 
-        // 该文件的路径
-        // String path = classPathResource.getPath();
-        // log.info(path);
-
         try {
             // 获取文件的输入流
             InputStream fileInputStream = classPathResource.getInputStream();

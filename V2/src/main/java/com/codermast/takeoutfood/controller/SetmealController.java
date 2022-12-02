@@ -12,10 +12,13 @@ import com.codermast.takeoutfood.service.CategoryService;
 import com.codermast.takeoutfood.service.SetMealService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +35,9 @@ public class SetmealController {
 
     @Autowired
     CategoryService categoryService;
+
+    @Autowired
+    RedisTemplate redisTemplate;
     /**
      * @Description: 分页获取套餐信息
      * @param page 页码
@@ -41,9 +47,19 @@ public class SetmealController {
      */
     @GetMapping("/page")
     public R<Page<SetMealDto>> page(int page, int pageSize, String name){
+        String key = "category:page_" + page + ":pageSize_" + pageSize + ":name_" + name;
+        // 查询缓存
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        Page<SetMealDto> setMealDtoPage = null;
+        setMealDtoPage = (Page<SetMealDto>) opsForValue.get(key);
+
+        // 缓存命中
+        if (setMealDtoPage != null){
+            return R.success(setMealDtoPage);
+        }
 
         Page<SetMeal> setMealPage = new Page<>(page,pageSize);
-        Page<SetMealDto> setMealDtoPage = new Page<>();
+        setMealDtoPage = new Page<>();
 
 
         LambdaQueryWrapper<SetMeal> queryWrapper = new LambdaQueryWrapper<>();
@@ -67,6 +83,9 @@ public class SetmealController {
 
         setMealDtoPage.setTotal(setMealPage.getTotal());
         setMealDtoPage.setRecords(setMealDtoPageRecords);
+
+        // 存入缓存
+        opsForValue.set(key,setMealDtoPage,60, TimeUnit.MINUTES);
         return R.success(setMealDtoPage);
     }
 
@@ -77,7 +96,22 @@ public class SetmealController {
      */
     @GetMapping("/{id}")
     public R<SetMealDto> getByIdWithSetMealDto(@PathVariable String id){
-        return R.success(setMealService.getByIdWithSetMealDto(id));
+        // 查询缓存
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+        SetMealDto byIdWithSetMealDto = null;
+        String key = "setMealDto:id:" + id;
+        byIdWithSetMealDto = (SetMealDto) opsForValue.get(key);
+
+        // 缓存命中
+        if (byIdWithSetMealDto != null){
+            return R.success(byIdWithSetMealDto);
+        }
+
+        byIdWithSetMealDto = setMealService.getByIdWithSetMealDto(id);
+
+        // 存入缓存
+        opsForValue.set(key,byIdWithSetMealDto,60,TimeUnit.MINUTES);
+        return R.success(byIdWithSetMealDto);
     }
 
     /**
@@ -86,10 +120,12 @@ public class SetmealController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PostMapping
-    public R<String> save(@RequestBody SetMealDto setMealDto, HttpServletRequest request){
-        Long id = (Long) request.getSession().getAttribute("employee");
-        BaseContext.setCurrentId(id);
+    public R<String> save(@RequestBody SetMealDto setMealDto){
         setMealService.saveByIdWithSetMealDto(setMealDto);
+
+        // 存入缓存
+        String key = "setMealDto:id:" + setMealDto.getId();
+        redisTemplate.opsForValue().set(key,setMealDto,60,TimeUnit.MINUTES);
         return R.success("创建成功");
     }
 
@@ -100,9 +136,12 @@ public class SetmealController {
      */
     @PutMapping
     public R<String> updateWithDish(@RequestBody SetMealDto setMealDto, HttpServletRequest request){
-        Long id = (Long) request.getSession().getAttribute("employee");
-        BaseContext.setCurrentId(id);
         boolean ret = setMealService.updateWithDish(setMealDto);
+
+        // 存入缓存
+        String key = "setMealDto:id:" + setMealDto.getId();
+        redisTemplate.opsForValue().set(key,setMealDto,60,TimeUnit.MINUTES);
+
         return ret?R.success("修改成功") : R.error("修改失败");
     }
 
@@ -114,6 +153,12 @@ public class SetmealController {
     @DeleteMapping
     public R<String> delete(@RequestParam List<Long> ids){
         boolean ret = setMealService.removeBatchByIds(ids);
+
+        //删除缓存
+        for (Long id : ids) {
+            String key = "setMealDto:id:" + id;
+            redisTemplate.delete(key);
+        }
         return ret?R.success("删除成功") : R.error("删除失败");
     }
 
@@ -150,6 +195,21 @@ public class SetmealController {
      */
     @GetMapping("/list")
     public R<List<SetMeal>> getListByCategoryIdWithDish(String categoryId,Integer status){
-        return R.success(setMealService.getListByCategoryIdWithSetMeal(categoryId,status));
+        List<SetMeal> listByCategoryIdWithSetMeal = null;
+
+        // 查询缓存
+        ValueOperations opsForValue = redisTemplate.opsForValue();
+
+        String key = "setMeal:category_" + categoryId + ":status_" + status;
+        listByCategoryIdWithSetMeal = (List<SetMeal>) opsForValue.get(key);
+        // 缓存击中
+        if (listByCategoryIdWithSetMeal != null){
+            return R.success(listByCategoryIdWithSetMeal);
+        }
+
+        listByCategoryIdWithSetMeal = setMealService.getListByCategoryIdWithSetMeal(categoryId, status);
+        // 存入缓存
+        opsForValue.set(key,listByCategoryIdWithSetMeal,60,TimeUnit.MINUTES);
+        return R.success(listByCategoryIdWithSetMeal);
     }
 }

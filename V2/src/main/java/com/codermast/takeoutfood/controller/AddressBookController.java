@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -67,12 +66,11 @@ public class AddressBookController {
 
     /**
      * @param addressBook 地址封装对象
-     * @param session
      * @Description: 添加地址信息
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PostMapping
-    public R<String> save(@RequestBody AddressBook addressBook, HttpSession session) {
+    public R<String> save(@RequestBody AddressBook addressBook) {
         // 从线程中获取当前登录的用户id
         Long userId = BaseContext.getCurrentId();
         // 给地址赋值用户id

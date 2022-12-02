@@ -49,7 +49,12 @@ public class OrderController {
         return R.success(pageInfo);
     }
 
-
+    /**
+     * @Description: 分页获取用户订单
+     * @param page 页码
+     * @param pageSize  页面大小
+     * @Author: <a href="https://www.codermast.com/">CoderMast</a>
+     */
     @GetMapping("/userPage")
     public R<Page<Order>> userPage(Integer page, Integer pageSize){
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
@@ -63,6 +68,11 @@ public class OrderController {
         return R.success(pageInfo);
     }
 
+    /**
+     * @Description: 提交订单
+     * @param order  订单封装
+     * @Author: <a href="https://www.codermast.com/">CoderMast</a>
+     */
     @PostMapping("/submit")
     public R<String> submit(@RequestBody Order order){
         orderService.submit(order);

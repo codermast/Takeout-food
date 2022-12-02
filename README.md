@@ -39,13 +39,11 @@
 1. 下载本项目到服务器。
 
 2. 修改`src/main/resources/application.yml`文件内的数据库信息
-> 需要改动的就是下面我勾选的三个地方
-
-![](https://github.com/codermast/Takeout-food/blob/master/resource/%E6%88%AA%E5%B1%8F2022-11-28%2021.59.36.png)
-
+> V1需要改动的就是下面说明的三个地方
   - 数据库名
   - 数据库用户名
   - 数据库密码
+> V2还需要添加Redis的配置信息
 3. 在服务器上部署时，将项目打成`jar`包，使用`java -jar 包名`进行运行
 4. 访问后台：[localhost:8080/backend/page/login.html](http://localhost:8080/backend/page/login.html)即可
 5. 访问前台：[localhost:8080/front/page/login.html](http://localhost:8080/front/page/login.html)
@@ -75,7 +73,7 @@
 - [x] 缓存套餐信息
 ## 参考教程
 
-- 笔记整理：CSDN-[https://blog.csdn.net/qq_33685334](https://blog.csdn.net/qq_33685334)
+- 笔记整理：CSDN-[https://blog.csdn.net/qq_33685334/article/details/128150052](https://blog.csdn.net/qq_33685334/article/details/128150052)
 
 - 视频教程：黑马程序员-瑞吉外卖项目[https://www.bilibili.com/video/BV13a411q753](https://www.bilibili.com/video/BV13a411q753)
 

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpSession;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -71,7 +70,7 @@ public class UserController {
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PostMapping("/login")
-    public R<String> login(@RequestBody Map<String,String> map, HttpSession session){
+    public R<String> login(@RequestBody Map<String,String> map){
         String phone = map.get("phone");
         String code = map.get("code");
 
@@ -95,8 +94,7 @@ public class UserController {
                 user.setStatus(1);   // 设置状态，1为启用
                 userService.save(user);
             }
-            // 将用户id放在session中
-            session.setAttribute("user", user.getId());
+            // 将用户id放在线程中
             BaseContext.setCurrentId(user.getId());
 
             // 匹配成功意味着登录成功，故直接删除掉该验证码
@@ -109,12 +107,11 @@ public class UserController {
 
     /**
      * @Description: 用户退出登录
-     * @param  session 当前用的session
      * @Author: <a href="https://www.codermast.com/">CoderMast</a>
      */
     @PostMapping("/loginout")
-    public R<String> loginOut(HttpSession session){
-        session.removeAttribute("user");
+    public R<String> loginOut(){
+        BaseContext.setCurrentId(null);
         return R.success("退出成功！");
     }
 }

@@ -3,7 +3,7 @@ server:
 spring:
   application:
     #应用的名称，可选
-    name: reggie_take_out
+    name: takeout_food
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -11,9 +11,9 @@ spring:
       username: codermast # 数据库用户名
       password: 123456    # 数据库密码
   redis:
-    host: 10.211.55.8
-    port: 6379
-    timeout: 20000
+    host: 10.211.55.8 # Redis地址
+    port: 6379        # Redis端口
+    timeout: 20000    #连接超时时间
 
 mybatis-plus:
   configuration:
